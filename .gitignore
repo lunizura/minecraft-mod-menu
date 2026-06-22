@@ -1,0 +1,26 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# PyInstaller / Build outputs
+build/
+dist/
+*.spec
+
+# Backups generated during test or live runs
+.mc_mod_backups/
+
+# Virtual Environments
+venv/
+.venv/
+env/
+
+# IDE / Editor config
+.vscode/
+.idea/
+*.suo
+*.user
+
+# Binaries
+*.exe
