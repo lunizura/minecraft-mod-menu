@@ -137,3 +137,120 @@ class TAG_Short(NBTTag):
 
 class TAG_Int(NBTTag):
     tag_type = TAG_INT
+
+    def __init__(self, value: int = 0):
+        self.value = int(value)
+        if self.value > 2147483647 or self.value < -2147483648:
+            self.value = struct.unpack(">i", struct.pack(">i", self.value & 0xFFFFFFFF))[0]
+
+    def to_py(self) -> int:
+        return self.value
+
+    def __int__(self) -> int:
+        return self.value
+
+    def __float__(self) -> float:
+        return float(self.value)
+
+    def __bool__(self) -> bool:
+        return bool(self.value)
+
+    def __repr__(self) -> str:
+        return f"TAG_Int({self.value})"
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, TAG_Int):
+            return self.value == other.value
+        if isinstance(other, int):
+            return self.value == other
+        return False
+
+
+class TAG_Long(NBTTag):
+    tag_type = TAG_LONG
+
+    def __init__(self, value: int = 0):
+        self.value = int(value)
+        if self.value > 9223372036854775807 or self.value < -9223372036854775808:
+            self.value = struct.unpack(">q", struct.pack(">q", self.value & 0xFFFFFFFFFFFFFFFF))[0]
+
+    def to_py(self) -> int:
+        return self.value
+
+    def __int__(self) -> int:
+        return self.value
+
+    def __float__(self) -> float:
+        return float(self.value)
+
+    def __bool__(self) -> bool:
+        return bool(self.value)
+
+    def __repr__(self) -> str:
+        return f"TAG_Long({self.value}L)"
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, TAG_Long):
+            return self.value == other.value
+        if isinstance(other, int):
+            return self.value == other
+        return False
+
+
+class TAG_Float(NBTTag):
+    tag_type = TAG_FLOAT
+
+    def __init__(self, value: float = 0.0):
+        self.value = float(value)
+
+    def to_py(self) -> float:
+        return self.value
+
+    def __float__(self) -> float:
+        return self.value
+
+    def __int__(self) -> int:
+        return int(self.value)
+
+    def __repr__(self) -> str:
+        return f"TAG_Float({self.value}f)"
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, TAG_Float):
+            return abs(self.value - other.value) < 1e-6
+        if isinstance(other, (int, float)):
+            return abs(self.value - float(other)) < 1e-6
+        return False
+
+
+class TAG_Double(NBTTag):
+    tag_type = TAG_DOUBLE
+
+    def __init__(self, value: float = 0.0):
+        self.value = float(value)
+
+    def to_py(self) -> float:
+        return self.value
+
+    def __float__(self) -> float:
+        return self.value
+
+    def __int__(self) -> int:
+        return int(self.value)
+
+    def __repr__(self) -> str:
+        return f"TAG_Double({self.value}d)"
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, TAG_Double):
+            return self.value == other.value
+        if isinstance(other, (int, float)):
+            return self.value == float(other)
+        return False
+
+
+class TAG_Byte_Array(NBTTag):
+    tag_type = TAG_BYTE_ARRAY
+
+    def __init__(self, value: Union[bytes, bytearray, List[int]] = b""):
+
