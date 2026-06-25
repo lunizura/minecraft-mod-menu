@@ -129,3 +129,83 @@ class WorldSave:
         self.game_rules_file: Optional[NBTFile] = None
         self.game_rules_data: Optional[TAG_Compound] = None
 
+        self.weather_path: Optional[str] = None
+        self.weather_file: Optional[NBTFile] = None
+        self.weather_data: Optional[TAG_Compound] = None
+
+        self.is_26x: bool = False
+        self.data_version: int = 0
+        self.load_error: Optional[str] = None
+        self.display_label: str = f"{self.world_name} [{self.folder_name}] - {self.profile_name}"
+
+        self.backup_dir = os.path.join(self.world_dir, ".mc_mod_backups")
+
+    def load(self) -> bool:
+        """Load level.dat, player data, game rules, and weather files."""
+        if not os.path.isfile(self.level_path):
+            self.load_error = f"Missing level.dat in {self.world_dir}"
+            return False
+
+        try:
+            self.level_file = NBTFile.load(self.level_path)
+            self.level_data = self.level_file.root.get("Data")
+            if not isinstance(self.level_data, TAG_Compound):
+                self.load_error = "Invalid level.dat: missing Data compound"
+                return False
+
+            self.world_name = str(self.level_data.get("LevelName", self.folder_name))
+            self.data_version = int(self.level_data.get("DataVersion", 0))
+
+            # Detect Minecraft 26.x vs legacy
+            players_dir = os.path.join(self.world_dir, "players", "data")
+            legacy_playerdata_dir = os.path.join(self.world_dir, "playerdata")
+            rules_26x_path = os.path.join(self.world_dir, "data", "minecraft", "game_rules.dat")
+            weather_26x_path = os.path.join(self.world_dir, "data", "minecraft", "weather.dat")
+
+            if os.path.isdir(players_dir) or os.path.isfile(rules_26x_path) or self.data_version >= 4500:
+                self.is_26x = True
+
+            # 1. Resolve Singleplayer Player File using decoded UUID
+            sp_uuid_raw = self.level_data.get("singleplayer_uuid")
+            sp_uuid_str = decode_mc_uuid(sp_uuid_raw)
+
+            target_player_path: Optional[str] = None
+
+            if os.path.isdir(players_dir):
+                if sp_uuid_str:
+                    candidate = os.path.join(players_dir, f"{sp_uuid_str}.dat")
+                    if os.path.isfile(candidate):
+                        target_player_path = candidate
+                if not target_player_path:
+                    files = [f for f in os.listdir(players_dir) if f.endswith(".dat") and not f.endswith("_old.dat")]
+                    if files:
+                        # Sort by modification time (most recently played first)
+                        files.sort(key=lambda x: os.path.getmtime(os.path.join(players_dir, x)), reverse=True)
+                        target_player_path = os.path.join(players_dir, files[0])
+            elif os.path.isdir(legacy_playerdata_dir):
+                if sp_uuid_str:
+                    candidate = os.path.join(legacy_playerdata_dir, f"{sp_uuid_str}.dat")
+                    if os.path.isfile(candidate):
+                        target_player_path = candidate
+                if not target_player_path:
+                    files = [f for f in os.listdir(legacy_playerdata_dir) if f.endswith(".dat") and not f.endswith("_old.dat")]
+                    if files:
+                        files.sort(key=lambda x: os.path.getmtime(os.path.join(legacy_playerdata_dir, x)), reverse=True)
+                        target_player_path = os.path.join(legacy_playerdata_dir, files[0])
+
+            if target_player_path and os.path.isfile(target_player_path):
+                self.player_path = target_player_path
+                self.player_file = NBTFile.load(target_player_path)
+                self.player_data = self.player_file.root
+            elif "Player" in self.level_data and isinstance(self.level_data["Player"], TAG_Compound):
+                # Embedded player in legacy level.dat
+                self.player_path = self.level_path
+                self.player_file = self.level_file
+                self.player_data = self.level_data["Player"]
+
+            # 2. Resolve Game Rules
+            if os.path.isfile(rules_26x_path):
+                self.game_rules_path = rules_26x_path
+                self.game_rules_file = NBTFile.load(rules_26x_path)
+                if "data" in self.game_rules_file.root and isinstance(self.game_rules_file.root["data"], TAG_Compound):
+
