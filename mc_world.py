@@ -208,4 +208,84 @@ class WorldSave:
                 self.game_rules_path = rules_26x_path
                 self.game_rules_file = NBTFile.load(rules_26x_path)
                 if "data" in self.game_rules_file.root and isinstance(self.game_rules_file.root["data"], TAG_Compound):
+                    self.game_rules_data = self.game_rules_file.root["data"]
+                else:
+                    self.game_rules_data = self.game_rules_file.root
+            elif "GameRules" in self.level_data and isinstance(self.level_data["GameRules"], TAG_Compound):
+                self.game_rules_path = self.level_path
+                self.game_rules_file = self.level_file
+                self.game_rules_data = self.level_data["GameRules"]
+
+            # 3. Resolve Weather
+            if os.path.isfile(weather_26x_path):
+                self.weather_path = weather_26x_path
+                self.weather_file = NBTFile.load(weather_26x_path)
+                if "data" in self.weather_file.root and isinstance(self.weather_file.root["data"], TAG_Compound):
+                    self.weather_data = self.weather_file.root["data"]
+                else:
+                    self.weather_data = self.weather_file.root
+            else:
+                self.weather_path = self.level_path
+                self.weather_file = self.level_file
+                self.weather_data = self.level_data
+
+            ver_label = "26.x" if self.is_26x else "1.20/1.21"
+            self.display_label = f"{self.world_name} [{self.folder_name}] - {self.profile_name} ({ver_label})"
+            return True
+        except Exception as e:
+            self.load_error = f"Error loading world: {str(e)}"
+            return False
+
+    def create_backup(self, target_filepath: str) -> str:
+        """Create a timestamped backup before writing to any .dat file."""
+        os.makedirs(self.backup_dir, exist_ok=True)
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+        base_name = os.path.basename(target_filepath)
+        backup_name = f"{base_name}.{timestamp}.bak"
+        backup_path = os.path.join(self.backup_dir, backup_name)
+        if os.path.isfile(target_filepath):
+            shutil.copy2(target_filepath, backup_path)
+        return backup_path
+
+    def list_backups(self) -> List[Dict[str, Any]]:
+        """List all available backups in the world backup directory."""
+        if not os.path.isdir(self.backup_dir):
+            return []
+        items = []
+        for fname in sorted(os.listdir(self.backup_dir), reverse=True):
+            if fname.endswith(".bak"):
+                full_path = os.path.join(self.backup_dir, fname)
+                mtime = os.path.getmtime(full_path)
+                dt = datetime.datetime.fromtimestamp(mtime).strftime("%Y-%m-%d %H:%M:%S")
+                items.append({
+                    "filename": fname,
+                    "path": full_path,
+                    "date": dt,
+                    "size": os.path.getsize(full_path)
+                })
+        return items
+
+    def restore_backup(self, backup_filepath: str) -> bool:
+        """Restore a backup file to its original target."""
+        if not os.path.isfile(backup_filepath):
+            return False
+        base = os.path.basename(backup_filepath)
+        # Formatted like level.dat.20261019_153000_123456.bak
+        parts = base.split(".")
+        if len(parts) >= 3 and parts[-1] == "bak":
+            orig_name = f"{parts[0]}.{parts[1]}"
+            if orig_name == "level.dat":
+                dest = self.level_path
+            elif orig_name == "game_rules.dat" and self.game_rules_path:
+                dest = self.game_rules_path
+            elif orig_name == "weather.dat" and self.weather_path:
+                dest = self.weather_path
+            elif self.player_path and os.path.basename(self.player_path) == orig_name:
+                dest = self.player_path
+            elif self.is_26x and orig_name.endswith(".dat"):
+                dest = os.path.join(self.world_dir, "players", "data", orig_name)
+            else:
+                dest = os.path.join(self.world_dir, "playerdata", orig_name)
+
+            os.makedirs(os.path.dirname(dest), exist_ok=True)
 
