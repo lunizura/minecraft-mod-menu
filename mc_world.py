@@ -78,4 +78,54 @@ def get_default_save_dirs() -> List[Tuple[str, str]]:
                     dirs.append((p, prof_name))
 
         # CurseForge instances if present
+        curse_glob = os.path.join(appdata, "CurseForge", "minecraft", "Instances", "*", "saves")
+        for p in glob.glob(curse_glob):
+            if os.path.isdir(p):
+                parts = p.split(os.sep)
+                prof_name = "CurseForge"
+                try:
+                    p_idx = parts.index("Instances")
+                    prof_name = f"CurseForge: {parts[p_idx + 1]}"
+                except Exception:
+                    pass
+                if not any(d[0] == p for d in dirs):
+                    dirs.append((p, prof_name))
+
+        # PrismLauncher / MultiMC if present
+        prism_glob = os.path.join(appdata, "PrismLauncher", "instances", "*", ".minecraft", "saves")
+        for p in glob.glob(prism_glob):
+            if os.path.isdir(p):
+                parts = p.split(os.sep)
+                prof_name = "PrismLauncher"
+                try:
+                    p_idx = parts.index("instances")
+                    prof_name = f"Prism: {parts[p_idx + 1]}"
+                except Exception:
+                    pass
+                if not any(d[0] == p for d in dirs):
+                    dirs.append((p, prof_name))
+
+    return dirs
+
+
+class WorldSave:
+    """Represents a discovered Minecraft world save with full read/write controller methods."""
+
+    def __init__(self, world_dir: str, profile_name: str = "Vanilla"):
+        self.world_dir = os.path.abspath(world_dir)
+        self.profile_name = profile_name
+        self.folder_name = os.path.basename(self.world_dir)
+        self.world_name = self.folder_name
+
+        self.level_path = os.path.join(self.world_dir, "level.dat")
+        self.level_file: Optional[NBTFile] = None
+        self.level_data: Optional[TAG_Compound] = None
+
+        self.player_path: Optional[str] = None
+        self.player_file: Optional[NBTFile] = None
+        self.player_data: Optional[TAG_Compound] = None
+
+        self.game_rules_path: Optional[str] = None
+        self.game_rules_file: Optional[NBTFile] = None
+        self.game_rules_data: Optional[TAG_Compound] = None
 
