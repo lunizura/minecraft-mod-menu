@@ -373,4 +373,64 @@ class WorldSave:
         if not self.player_data:
             return False
         ab = self.player_data.get("abilities")
+        if isinstance(ab, TAG_Compound):
+            fl = ab.get("flying")
+            return bool(fl and fl.to_py() == 1)
+        return False
+
+    def set_flying(self, enabled: bool) -> None:
+        abilities = self._ensure_abilities()
+        abilities["flying"] = TAG_Byte(1 if enabled else 0)
+
+    def get_instabuild(self) -> bool:
+        if not self.player_data:
+            return False
+        ab = self.player_data.get("abilities")
+        if isinstance(ab, TAG_Compound):
+            ib = ab.get("instabuild")
+            return bool(ib and ib.to_py() == 1)
+        return False
+
+    def set_instabuild(self, enabled: bool) -> None:
+        abilities = self._ensure_abilities()
+        abilities["instabuild"] = TAG_Byte(1 if enabled else 0)
+
+    def get_vitals(self) -> Dict[str, Any]:
+        if not self.player_data:
+            return {"health": 20.0, "food": 20, "saturation": 20.0, "absorption": 0.0, "xp_level": 0}
+        health = float(self.player_data.get("Health", TAG_Float(20.0)).to_py())
+        food = int(self.player_data.get("foodLevel", TAG_Int(20)).to_py())
+        saturation = float(self.player_data.get("foodSaturationLevel", TAG_Float(20.0)).to_py())
+        absorption = float(self.player_data.get("AbsorptionAmount", TAG_Float(0.0)).to_py())
+        xp_level = int(self.player_data.get("XpLevel", TAG_Int(0)).to_py())
+        return {
+            "health": health,
+            "food": food,
+            "saturation": saturation,
+            "absorption": absorption,
+            "xp_level": xp_level
+        }
+
+    def refill_vitals(self, health: float = 20.0, food: int = 20, saturation: float = 20.0, absorption: float = 0.0) -> None:
+        if not self.player_data:
+            return
+        # If requested health exceeds max_health attribute, bump max_health attribute
+        curr_max = self.get_attribute("minecraft:max_health")
+        if health > curr_max:
+            self.set_attribute("minecraft:max_health", health)
+
+        self.player_data["Health"] = TAG_Float(health)
+        self.player_data["foodLevel"] = TAG_Int(food)
+        self.player_data["foodSaturationLevel"] = TAG_Float(saturation)
+        self.player_data["foodTickTimer"] = TAG_Int(0)
+        self.player_data["foodExhaustionLevel"] = TAG_Float(0.0)
+        self.player_data["AbsorptionAmount"] = TAG_Float(absorption)
+
+        # Clear injury, fire, death, and air timers
+        self.player_data["DeathTime"] = TAG_Short(0)
+        self.player_data["HurtTime"] = TAG_Short(0)
+        self.player_data["Fire"] = TAG_Short(-20)
+        self.player_data["Air"] = TAG_Short(300)
+        self.player_data["SleepTimer"] = TAG_Short(0)
+
 
