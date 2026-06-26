@@ -288,4 +288,89 @@ class WorldSave:
                 dest = os.path.join(self.world_dir, "playerdata", orig_name)
 
             os.makedirs(os.path.dirname(dest), exist_ok=True)
+            shutil.copy2(backup_filepath, dest)
+            self.load()
+            return True
+        return False
+
+    def _atomic_save(self, nbt_obj: NBTFile, file_path: str) -> None:
+        """Save NBT file safely: backup original first, write to .tmp, then atomic rename."""
+        self.create_backup(file_path)
+        tmp_path = f"{file_path}.tmp"
+        nbt_obj.save(tmp_path, compress=nbt_obj.compressed)
+        if os.path.isfile(file_path):
+            os.replace(tmp_path, file_path)
+        else:
+            os.rename(tmp_path, file_path)
+
+    def save_all(self) -> None:
+        """Save all modified files (level.dat, player .dat, game_rules.dat, weather.dat)."""
+        # 1. Level file
+        if self.level_file and self.level_path:
+            # Sync embedded Player if present in legacy
+            if self.level_data and "Player" in self.level_data and self.player_data and self.player_data != self.level_data["Player"]:
+                self.level_data["Player"] = self.player_data
+            self._atomic_save(self.level_file, self.level_path)
+
+        # 2. Player file (if separate)
+        if self.player_file and self.player_path and self.player_path != self.level_path:
+            self._atomic_save(self.player_file, self.player_path)
+
+        # 3. Game rules file (if separate)
+        if self.game_rules_file and self.game_rules_path and self.game_rules_path != self.level_path:
+            self._atomic_save(self.game_rules_file, self.game_rules_path)
+
+        # 4. Weather file (if separate)
+        if self.weather_file and self.weather_path and self.weather_path != self.level_path:
+            self._atomic_save(self.weather_file, self.weather_path)
+
+    # ==========================================
+    # TAB 1: PLAYER HACKS & VITALS
+    # ==========================================
+
+    def _ensure_abilities(self) -> TAG_Compound:
+        if not self.player_data:
+            raise ValueError("No player data loaded")
+        if "abilities" not in self.player_data or not isinstance(self.player_data["abilities"], TAG_Compound):
+            self.player_data["abilities"] = TAG_Compound()
+        return self.player_data["abilities"]
+
+    def get_god_mode(self) -> bool:
+        if not self.player_data:
+            return False
+        invul = self.player_data.get("Invulnerable")
+        ab = self.player_data.get("abilities")
+        ab_invul = ab.get("invulnerable") if isinstance(ab, TAG_Compound) else None
+        return bool(invul and invul.to_py() == 1) or bool(ab_invul and ab_invul.to_py() == 1)
+
+    def set_god_mode(self, enabled: bool) -> None:
+        if not self.player_data:
+            return
+        val = TAG_Byte(1 if enabled else 0)
+        self.player_data["Invulnerable"] = val
+        abilities = self._ensure_abilities()
+        abilities["invulnerable"] = val
+        if enabled:
+            # If player was dead, ensure health is restored so god mode is effective
+            v = self.get_vitals()
+            if v["health"] <= 0.0:
+                self.refill_vitals(health=20.0)
+
+    def get_mayfly(self) -> bool:
+        if not self.player_data:
+            return False
+        ab = self.player_data.get("abilities")
+        if isinstance(ab, TAG_Compound):
+            mf = ab.get("mayfly")
+            return bool(mf and mf.to_py() == 1)
+        return False
+
+    def set_mayfly(self, enabled: bool) -> None:
+        abilities = self._ensure_abilities()
+        abilities["mayfly"] = TAG_Byte(1 if enabled else 0)
+
+    def get_flying(self) -> bool:
+        if not self.player_data:
+            return False
+        ab = self.player_data.get("abilities")
 
