@@ -1,5 +1,10 @@
 # ⚔️ Minecraft Mod Menu & World Editor
 
+[![CI](https://github.com/lunizura/minecraft-mod-menu/actions/workflows/ci.yml/badge.svg)](https://github.com/lunizura/minecraft-mod-menu/actions)
+[![Release](https://img.shields.io/github/v/release/lunizura/minecraft-mod-menu?color=brightgreen&label=release)](https://github.com/lunizura/minecraft-mod-menu/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
+
 Just a fun little desktop tool I made to mess around with Minecraft Java save files! It gives you a dark-mode mod menu interface where you can forge ridiculous God items (Level 255 Sharpness, Fortune, Density, etc.), fly around in Survival mode, tweak player attributes like size and reach, revive dead Hardcore worlds, and flip world rules on or off without dealing with complex commands or installing in-game mods.
 
 Works seamlessly with both modern **Minecraft 26.x** (multi-file save layout) and **1.20 / 1.21** worlds.
