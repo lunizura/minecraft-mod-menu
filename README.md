@@ -62,23 +62,23 @@ If you prefer running quick cheats from terminal:
 python mc_cli.py scan
 
 # Inspect player coordinates and health
-python mc_cli.py inspect "Izu             Lyn"
+python mc_cli.py inspect "My World"
 
 # Enable god mode and survival flight
-python mc_cli.py god "Izu             Lyn"
+python mc_cli.py god "My World"
 
 # Give yourself a full 32k Netherite kit
-python mc_cli.py kit "Izu             Lyn" god_netherite
+python mc_cli.py kit "My World" god_netherite
 
 # Revive a dead player or hardcore save
-python mc_cli.py revive "Izu             Lyn"
-python mc_cli.py hardcore-revive "Izu             Lyn"
+python mc_cli.py revive "My World"
+python mc_cli.py hardcore-revive "My World"
 
 # Turn on commands / cheats
-python mc_cli.py cheats "Izu             Lyn" on
+python mc_cli.py cheats "My World" on
 
 # Clear the weather
-python mc_cli.py weather "Izu             Lyn" clear
+python mc_cli.py weather "My World" clear
 ```
 
 ---
