@@ -12,6 +12,7 @@ import struct
 import tempfile
 import unittest
 import uuid
+from pathlib import Path
 
 from nbt_core import (
     NBTFile, NBTTag,
@@ -354,6 +355,48 @@ class TestWorldController(unittest.TestCase):
 
         w.set_weather("clear")
         self.assertEqual(w.get_weather(), "clear")
+
+    def test_custom_coordinate_teleport(self):
+        w = self.world
+        w.teleport_player(123.5, 75.0, -456.25, "minecraft:the_nether")
+        pos = w.get_player_pos()
+        self.assertAlmostEqual(pos[0], 123.5, places=2)
+        self.assertAlmostEqual(pos[1], 75.0, places=2)
+        self.assertAlmostEqual(pos[2], -456.25, places=2)
+        self.assertEqual(w.get_player_dimension(), "minecraft:the_nether")
+        self.assertEqual(w.player_data["fall_distance"].to_py(), 0.0)
+
+    def test_waypoints_manager(self):
+        w = self.world
+        wp = w.set_waypoint("nether_fortress", 100.0, 64.0, -200.0, "minecraft:the_nether")
+        self.assertEqual(wp["name"], "nether_fortress")
+        self.assertEqual(wp["x"], 100.0)
+
+        all_wp = w.get_waypoints()
+        self.assertIn("nether_fortress", all_wp)
+
+        success = w.teleport_to_waypoint("nether_fortress")
+        self.assertTrue(success)
+        pos = w.get_player_pos()
+        self.assertAlmostEqual(pos[0], 100.0, places=2)
+        self.assertEqual(w.get_player_dimension(), "minecraft:the_nether")
+
+        deleted = w.delete_waypoint("nether_fortress")
+        self.assertTrue(deleted)
+        self.assertNotIn("nether_fortress", w.get_waypoints())
+
+    def test_world_zip_export(self):
+        w = self.world
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            out_zip = Path(td) / "test_export.zip"
+            res_path = w.export_world_zip(str(out_zip))
+            self.assertTrue(out_zip.exists())
+            self.assertGreater(out_zip.stat().st_size, 100)
+            import zipfile
+            with zipfile.ZipFile(out_zip, "r") as zf:
+                names = zf.namelist()
+                self.assertIn("level.dat", names)
 
     def test_26x_gamerules_and_cheats(self):
         w = self.world

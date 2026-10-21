@@ -182,6 +182,82 @@ def cmd_tp_death(args):
         print("No LastDeathLocation found on this player.")
 
 
+def cmd_tp(args):
+    w = find_world(args.world)
+    if not w:
+        print(f"Error: Could not find world matching '{args.world}'")
+        sys.exit(1)
+
+    dim = args.dim or w.get_player_dimension()
+    w.teleport_player(float(args.x), float(args.y), float(args.z), dim)
+    w.save_all()
+    print(f"Teleported player in '{w.world_name}' to ({args.x}, {args.y}, {args.z}) in {dim}")
+
+
+def cmd_waypoint(args):
+    w = find_world(args.world)
+    if not w:
+        print(f"Error: Could not find world matching '{args.world}'")
+        sys.exit(1)
+
+    sub = args.action
+    if sub == "list":
+        waypoints = w.get_waypoints()
+        if not waypoints:
+            print(f"No saved waypoints in '{w.world_name}'.")
+            return
+        print(f"\nSaved Waypoints in '{w.world_name}':")
+        print(f"{'Name':<20} | {'X':<8} | {'Y':<8} | {'Z':<8} | {'Dimension'}")
+        print("-" * 65)
+        for name, data in waypoints.items():
+            print(f"{name:<20} | {data['x']:<8} | {data['y']:<8} | {data['z']:<8} | {data.get('dimension', 'unknown')}")
+        print()
+
+    elif sub == "add":
+        if not args.name:
+            print("Error: Waypoint name required.")
+            sys.exit(1)
+        if args.x is not None and args.y is not None and args.z is not None:
+            x, y, z = float(args.x), float(args.y), float(args.z)
+        else:
+            pos = w.get_player_pos()
+            x, y, z = pos[0], pos[1], pos[2]
+        dim = args.dim or w.get_player_dimension()
+        w.set_waypoint(args.name, x, y, z, dim)
+        print(f"Saved waypoint '{args.name}' at ({x:.1f}, {y:.1f}, {z:.1f}) in {dim}")
+
+    elif sub == "tp":
+        if not args.name:
+            print("Error: Waypoint name required.")
+            sys.exit(1)
+        if w.teleport_to_waypoint(args.name):
+            w.save_all()
+            print(f"Teleported player to waypoint '{args.name}' in world '{w.world_name}'")
+        else:
+            print(f"Error: Waypoint '{args.name}' not found.")
+            sys.exit(1)
+
+    elif sub == "delete":
+        if not args.name:
+            print("Error: Waypoint name required.")
+            sys.exit(1)
+        if w.delete_waypoint(args.name):
+            print(f"Deleted waypoint '{args.name}' from world '{w.world_name}'")
+        else:
+            print(f"Error: Waypoint '{args.name}' not found.")
+            sys.exit(1)
+
+
+def cmd_export(args):
+    w = find_world(args.world)
+    if not w:
+        print(f"Error: Could not find world matching '{args.world}'")
+        sys.exit(1)
+
+    out_path = w.export_world_zip(args.out)
+    print(f"World '{w.world_name}' successfully exported to:\n  {out_path}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Minecraft All-in-One Mod Menu CLI")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -234,6 +310,32 @@ def main():
     p_tp = subparsers.add_parser("tp-death", help="Teleport player to last death coordinates")
     p_tp.add_argument("world", help="World directory path or world name")
     p_tp.set_defaults(func=cmd_tp_death)
+
+    # tp
+    p_coord = subparsers.add_parser("tp", help="Teleport player to custom (X, Y, Z) coordinates")
+    p_coord.add_argument("world", help="World directory path or world name")
+    p_coord.add_argument("x", type=float, help="X coordinate")
+    p_coord.add_argument("y", type=float, help="Y coordinate")
+    p_coord.add_argument("z", type=float, help="Z coordinate")
+    p_coord.add_argument("--dim", default=None, help="Target dimension (e.g. minecraft:the_nether)")
+    p_coord.set_defaults(func=cmd_tp)
+
+    # waypoint
+    p_wp = subparsers.add_parser("waypoint", help="Manage named coordinate bookmarks")
+    p_wp.add_argument("world", help="World directory path or world name")
+    p_wp.add_argument("action", choices=["list", "add", "tp", "delete"], help="Waypoint action")
+    p_wp.add_argument("name", nargs="?", default=None, help="Waypoint name")
+    p_wp.add_argument("--x", type=float, default=None, help="X coordinate")
+    p_wp.add_argument("--y", type=float, default=None, help="Y coordinate")
+    p_wp.add_argument("--z", type=float, default=None, help="Z coordinate")
+    p_wp.add_argument("--dim", default=None, help="Dimension")
+    p_wp.set_defaults(func=cmd_waypoint)
+
+    # export
+    p_exp = subparsers.add_parser("export", help="Export world folder to standalone ZIP archive")
+    p_exp.add_argument("world", help="World directory path or world name")
+    p_exp.add_argument("--out", default=None, help="Output ZIP file path")
+    p_exp.set_defaults(func=cmd_export)
 
     args = parser.parse_args()
     args.func(args)
