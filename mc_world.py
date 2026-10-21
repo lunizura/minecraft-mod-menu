@@ -9,10 +9,12 @@ custom lore support, Ender Chest management, hardcore revival, and weather contr
 from __future__ import annotations
 import os
 import glob
+import json
 import shutil
 import struct
 import uuid
 import datetime
+from pathlib import Path
 from typing import Dict, List, Any, Optional, Tuple
 
 from nbt_core import (
@@ -522,6 +524,85 @@ class WorldSave:
     def teleport_to_spawn(self) -> None:
         sx, sy, sz, dim = self.get_world_spawn()
         self.teleport_player(sx + 0.5, sy + 2.0, sz + 0.5, dim)
+
+    def get_player_dimension(self) -> str:
+        """Return the current player dimension as a namespaced string."""
+        if not self.player_data or "Dimension" not in self.player_data:
+            return "minecraft:overworld"
+        dim = self.player_data["Dimension"].to_py()
+        if isinstance(dim, int):
+            dim_rev = {0: "minecraft:overworld", -1: "minecraft:the_nether", 1: "minecraft:the_end"}
+            return dim_rev.get(dim, "minecraft:overworld")
+        return str(dim)
+
+    def get_waypoints(self) -> Dict[str, Any]:
+        """Load saved waypoints from .mc_waypoints.json inside the world directory."""
+        wp_path = Path(self.world_dir) / ".mc_waypoints.json"
+        if wp_path.exists():
+            try:
+                return json.loads(wp_path.read_text(encoding="utf-8"))
+            except Exception:
+                return {}
+        return {}
+
+    def set_waypoint(self, name: str, x: float, y: float, z: float, dimension: Optional[str] = None) -> Dict[str, Any]:
+        """Save or update a named coordinate waypoint."""
+        wp_path = Path(self.world_dir) / ".mc_waypoints.json"
+        waypoints = self.get_waypoints()
+        dim = dimension or self.get_player_dimension()
+        from datetime import datetime
+        entry = {
+            "name": name.strip(),
+            "x": round(float(x), 2),
+            "y": round(float(y), 2),
+            "z": round(float(z), 2),
+            "dimension": dim,
+            "created_at": datetime.now().isoformat()
+        }
+        waypoints[name.strip()] = entry
+        wp_path.write_text(json.dumps(waypoints, indent=2), encoding="utf-8")
+        return entry
+
+    def delete_waypoint(self, name: str) -> bool:
+        """Delete a saved waypoint by name."""
+        wp_path = Path(self.world_dir) / ".mc_waypoints.json"
+        waypoints = self.get_waypoints()
+        if name in waypoints:
+            del waypoints[name]
+            wp_path.write_text(json.dumps(waypoints, indent=2), encoding="utf-8")
+            return True
+        return False
+
+    def teleport_to_waypoint(self, name: str) -> bool:
+        """Teleport player to a named waypoint."""
+        waypoints = self.get_waypoints()
+        if name not in waypoints:
+            return False
+        wp = waypoints[name]
+        self.teleport_player(wp["x"], wp["y"], wp["z"], wp.get("dimension"))
+        return True
+
+    def export_world_zip(self, output_path: Optional[str] = None) -> str:
+        """Export world to a standalone, timestamped ZIP archive."""
+        import zipfile
+        from datetime import datetime
+        if not output_path:
+            ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+            safe_name = "".join(c for c in self.world_name if c.isalnum() or c in (" ", "-", "_")).strip()
+            out_file = Path(self.world_dir).parent / f"{safe_name}_{ts}.zip"
+        else:
+            out_file = Path(output_path)
+        
+        out_file.parent.mkdir(parents=True, exist_ok=True)
+        with zipfile.ZipFile(out_file, "w", zipfile.ZIP_DEFLATED) as zf:
+            for root, dirs, files in os.walk(self.world_dir):
+                if ".mc_mod_backups" in root:
+                    continue
+                for f in files:
+                    file_path = Path(root) / f
+                    arcname = file_path.relative_to(self.world_dir)
+                    zf.write(file_path, arcname)
+        return str(out_file)
 
     # ==========================================
     # TAB 2: BASE ATTRIBUTES MATRIX
