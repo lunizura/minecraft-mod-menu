@@ -49,8 +49,8 @@ Before saving any changes, the tool automatically makes a timestamped `.bak` cop
 
 ## 🚀 How to Run It
 
-### Method 1: Desktop App / Shortcut
-Double-click **`Minecraft_Mod_Menu.exe`** (or **`Minecraft Mod Menu.lnk`**) right from your desktop.
+### Method 1: Standalone Portable Executable (Recommended)
+Download **`Minecraft_Mod_Menu.exe`** from [GitHub Releases](https://github.com/lunizura/minecraft-mod-menu/releases) and double-click to launch (no Python installation required).
 
 ### Method 2: From Source
 ```bash
@@ -90,7 +90,7 @@ python mc_cli.py weather "My World" clear
 
 ## 🧪 Testing
 
-Ran 17 automated unit tests covering lossless NBT binary round-tripping across all 13 tag types:
+Ran 20 automated unit tests covering lossless NBT binary round-tripping across all 13 tag types:
 ```bash
 python -m unittest discover tests -v
 ```
