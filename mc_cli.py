@@ -12,7 +12,6 @@ import argparse
 from typing import Optional
 
 from mc_world import WorldSave, scan_all_worlds
-from mc_catalog import ATTRIBUTES, GAME_RULES
 
 
 def find_world(identifier: str) -> Optional[WorldSave]:
@@ -58,12 +57,12 @@ def cmd_inspect(args):
         print(f"Error: Could not find world matching '{args.world}'")
         sys.exit(1)
 
-    print(f"\n==========================================")
+    print("\n==========================================")
     print(f" World:   {w.world_name} [{w.folder_name}]")
     print(f" Profile: {w.profile_name} ({'Minecraft 26.x' if w.is_26x else 'Legacy 1.20/1.21'})")
     print(f" Path:    {w.world_dir}")
     print(f" Version: DataVersion {w.data_version}")
-    print(f"==========================================")
+    print("==========================================")
     print(f" Cheats (allowCommands): {w.get_cheats_enabled()}")
     print(f" Difficulty:             {w.get_difficulty()} (Hardcore: {w.get_hardcore()})")
     print(f" Weather:                {w.get_weather()}")
@@ -79,7 +78,7 @@ def cmd_inspect(args):
     if ldl:
         print(f" Last Death Location:    X: {ldl['x']}, Y: {ldl['y']}, Z: {ldl['z']} in {ldl['dimension']}")
     else:
-        print(f" Last Death Location:    None")
+        print(" Last Death Location:    None")
 
     items = w.get_items(is_ender=False)
     ender_items = w.get_items(is_ender=True)

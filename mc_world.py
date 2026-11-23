@@ -18,12 +18,10 @@ from pathlib import Path
 from typing import Dict, List, Any, Optional, Tuple
 
 from nbt_core import (
-    NBTFile, NBTTag,
-    TAG_Byte, TAG_Short, TAG_Int, TAG_Long, TAG_Float, TAG_Double,
-    TAG_String, TAG_List, TAG_Compound, TAG_Int_Array, TAG_Long_Array,
-    TAG_COMPOUND, TAG_STRING
+    NBTFile, TAG_Byte, TAG_Short, TAG_Int, TAG_Float, TAG_Double,
+    TAG_String, TAG_List, TAG_Compound, TAG_Int_Array, TAG_COMPOUND, TAG_STRING
 )
-from mc_catalog import ATTRIBUTES, ENCHANTMENTS, POTIONS, GAME_RULES
+from mc_catalog import ATTRIBUTES, GAME_RULES
 
 
 def decode_mc_uuid(uuid_val: Any) -> Optional[str]:
@@ -804,7 +802,7 @@ class WorldSave:
                 display_comp["Name"] = TAG_String(f'{{"text":"{custom_name}"}}')
                 has_display = True
             if custom_lore:
-                lines = [l.strip() for l in custom_lore.split("\n") if l.strip()]
+                lines = [line.strip() for line in custom_lore.split("\n") if line.strip()]
                 if lines:
                     display_comp["Lore"] = TAG_List(TAG_STRING, [TAG_String(f'{{"text":"{line}"}}') for line in lines])
                     has_display = True
@@ -842,7 +840,7 @@ class WorldSave:
                 has_components = True
 
             if custom_lore:
-                lines = [l.strip() for l in custom_lore.split("\n") if l.strip()]
+                lines = [line.strip() for line in custom_lore.split("\n") if line.strip()]
                 if lines:
                     components["minecraft:lore"] = TAG_List(TAG_STRING, [TAG_String(f'{{"text":"{line}"}}') for line in lines])
                     has_components = True

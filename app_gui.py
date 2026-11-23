@@ -8,17 +8,15 @@ Infinite Potions, Hardcore Revive, Cheats Unlocker, and Weather Control.
 
 from __future__ import annotations
 import os
-import sys
 import queue
 import threading
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Optional
 
 import customtkinter as ctk
 from tkinter import messagebox
 
-from nbt_core import NBTFile
 from mc_catalog import (
-    ATTRIBUTES, ENCHANTMENTS, POTIONS, GAME_RULES, ITEMS_CATALOG,
+    ATTRIBUTES, POTIONS, GAME_RULES, ITEMS_CATALOG,
     ITEM_PRESETS, search_items
 )
 from mc_world import WorldSave, scan_all_worlds
@@ -249,7 +247,7 @@ class MinecraftModMenuApp(ctk.CTk):
 
         ctk.CTkLabel(xp_frame, text="Inject XP Level:", font=ctk.CTkFont(size=12, weight="bold")).pack(side="left", padx=4)
         for lvl in [30, 100, 1000, 10000]:
-            ctk.CTkButton(xp_frame, text=f"Lvl {lvl:,}", width=80, height=26, fg_color=ui_theme.INPUT_BG, hover_color=ui_theme.BG_CARD_HOVER, border_width=1, border_color=ui_theme.BORDER_CARD, command=lambda l=lvl: self._action_set_xp(l)).pack(side="left", padx=4)
+            ctk.CTkButton(xp_frame, text=f"Lvl {lvl:,}", width=80, height=26, fg_color=ui_theme.INPUT_BG, hover_color=ui_theme.BG_CARD_HOVER, border_width=1, border_color=ui_theme.BORDER_CARD, command=lambda level=lvl: self._action_set_xp(level)).pack(side="left", padx=4)
 
         self.custom_xp_entry = ctk.CTkEntry(xp_frame, width=80, height=26, placeholder_text="Custom", fg_color=ui_theme.INPUT_BG)
         self.custom_xp_entry.pack(side="left", padx=(10, 4))
@@ -541,7 +539,6 @@ class MinecraftModMenuApp(ctk.CTk):
             return
 
         # Select item in combobox
-        target_name = f"{preset['id'].replace('minecraft:', '').replace('_', ' ').title()} ({preset['id']})"
         for opt in self.item_select_combo.cget("values"):
             if preset["id"] in opt:
                 self.item_select_combo.set(opt)

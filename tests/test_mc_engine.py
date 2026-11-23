@@ -15,14 +15,13 @@ import uuid
 from pathlib import Path
 
 from nbt_core import (
-    NBTFile, NBTTag,
-    TAG_End, TAG_Byte, TAG_Short, TAG_Int, TAG_Long,
+    NBTFile, TAG_End, TAG_Byte, TAG_Short, TAG_Int, TAG_Long,
     TAG_Float, TAG_Double, TAG_Byte_Array, TAG_String,
     TAG_List, TAG_Compound, TAG_Int_Array, TAG_Long_Array,
-    TAG_COMPOUND, TAG_INT, TAG_STRING
+    TAG_COMPOUND
 )
-from mc_catalog import ATTRIBUTES, ENCHANTMENTS, POTIONS, GAME_RULES, ITEM_PRESETS, search_items
-from mc_world import WorldSave, scan_all_worlds, decode_mc_uuid
+from mc_catalog import ATTRIBUTES, GAME_RULES, ITEM_PRESETS, search_items
+from mc_world import WorldSave
 
 
 class TestNBTCore(unittest.TestCase):
@@ -391,6 +390,7 @@ class TestWorldController(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             out_zip = Path(td) / "test_export.zip"
             res_path = w.export_world_zip(str(out_zip))
+            self.assertEqual(Path(res_path), out_zip)
             self.assertTrue(out_zip.exists())
             self.assertGreater(out_zip.stat().st_size, 100)
             import zipfile

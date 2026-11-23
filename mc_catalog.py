@@ -4,7 +4,7 @@ Provides comprehensive presets and metadata for Minecraft 1.20+ and 26.x.
 """
 
 from __future__ import annotations
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any
 
 # ==========================================
 # 1. ATTRIBUTES
